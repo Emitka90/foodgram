@@ -72,10 +72,10 @@ class Recipe(models.Model):
         through='RecipeIngredients',
         verbose_name='Ингредиенты'
     )
-#    image = models.ImageField(
-#        upload_to='recipes/images/', 
-#        verbose_name='Изображение'
-#    )
+    image = models.ImageField(
+        upload_to='recipes/images/', 
+        verbose_name='Изображение'
+    )
 
 
     class Meta:
