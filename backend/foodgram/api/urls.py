@@ -17,4 +17,5 @@ urlpatterns = [
         name="download",
     ),
     path('', include(router.urls)),
+    path(r'auth/', include('djoser.urls.authtoken')),
 ] 

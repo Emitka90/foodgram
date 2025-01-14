@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
+from rest_framework.validators import UniqueValidator
 from rest_framework import serializers
+from django.core.validators import RegexValidator
 import base64
 from django.core.files.base import ContentFile
 from api.models import Recipe
@@ -26,18 +28,44 @@ class Base64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
 
-class CustomUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ["id", "username", "email", "first_name", "last_name",]
-
-
 class AvatarSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
         fields = ["avatar",]
+
+
+class UserReadSerializer(serializers.ModelSerializer):
+    is_subscribed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('email', 'id', 'username',
+                  'first_name', 'last_name',
+                  'is_subscribed', 'avatar',)
+
+    def get_is_subscribed(self, obj):
+        if (self.context.get('request') and not self.context['request'].user.is_anonymous):
+            return Follow.objects.filter(user=self.context['request'].user, author=obj).exists()
+        return False
+
+
+
+class CustomUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(validators=[UniqueValidator(queryset=User.objects.all())])
+    username = serializers.CharField(validators=[UniqueValidator(queryset=User.objects.all()), RegexValidator(r'^[a-zA-Z][a-zA-Z0-9-_\.]{1,150}$')], max_length=150)
+#r'^[w.@+-]+Z'
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "first_name", "last_name", "password"]
+        extra_kwargs = {
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'username': {'required': True},
+            'email': {'required': True, },
+            'password': {'required': True, 'write_only': True}
+        }
     
 
 class PasswordSerializer(serializers.Serializer):
@@ -66,6 +94,7 @@ class FollowSerializer(serializers.ModelSerializer):
     username = serializers.ReadOnlyField(source='author.username')
     first_name = serializers.ReadOnlyField(source='author.first_name')
     last_name = serializers.ReadOnlyField(source='author.last_name')
+    avatar = Base64ImageField(read_only=True, source='author.avatar')
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
@@ -73,7 +102,7 @@ class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = ('id', 'email', 'username', 'first_name', 'last_name',
-                  'is_subscribed', 'recipes', 'recipes_count')
+                  'is_subscribed', 'recipes', 'recipes_count', 'avatar')
 
     def get_is_subscribed(self, obj):
         return Follow.objects.filter(

@@ -1,28 +1,49 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser, AllowAny
 from django.shortcuts import get_object_or_404
 import pyshorteners
 from django.http import HttpResponse
+from django_filters.rest_framework import DjangoFilterBackend
 
+from .pagination import LimitPageNumberPagination
+from .filters import RecipeFilter, IngredientSearch
+from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .models import Tag, Recipe, Ingredient, Favorite, Shopping_cart, RecipeIngredients
 from .serializers import TagSerializer, IngredientSerializer, RecipeSerializer, ShortRecipeSerializer
 #, RecipeMainSerializer, RecipeCreateSerializer
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+#    permission_classes = [IsAdminUser, AllowAny]
+#    permission_classes = (IsAdminOrReadOnly,)
+    http_method_names = ['get', 'head', 'options']
+    pagination_class = None
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
+    http_method_names = ['get', 'head', 'options']
+#    permission_classes = (IsAdminOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientSearch
+    pagination_class = None
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
+    filter_backends = (DjangoFilterBackend,)
+    filter_class = RecipeFilter
+    pagination_class = LimitPageNumberPagination
+    # Временно отключим пагинацию на уровне вьюсета, 
+    # так будет удобнее настраивать фильтрацию
+    # Фильтровать будем по полям color и birth_year модели Cat
+#    filterset_fields = ('tags', 'author') 
 
 #class RecipieView(viewsets.ModelViewSet):
 #    queryset = Recipe.objects.all()

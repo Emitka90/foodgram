@@ -4,18 +4,20 @@ from rest_framework.permissions import (
     IsAuthenticated,
 )
 
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from api.pagination import LimitPageNumberPagination
 from .models import Follow
 from .serializers import (
     CustomUserSerializer,
     PasswordSerializer,
     AvatarSerializer,
-    FollowSerializer
+    FollowSerializer,
+    UserReadSerializer
 )
 
 User = get_user_model()
@@ -23,9 +25,15 @@ User = get_user_model()
 
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    pagination_class = LimitPageNumberPagination
+#    serializer_class = CustomUserSerializer
 
-        
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return UserReadSerializer
+        return CustomUserSerializer
+
 
     def perform_create(self, serializer):
         if "password" in self.request.data:
@@ -47,18 +55,31 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     )
     def me(self, request, *args, **kwargs):
         user = get_object_or_404(User, pk=request.user.id)
-        serializer = CustomUserSerializer(user)
+        serializer = UserReadSerializer(user)
         return Response(serializer.data)
     
 
     @action(["post"], detail=False)
     def set_password(self, request, *args, **kwargs):
         user = self.request.user
+        current_password = user.password
+        print(current_password)
         serializer = PasswordSerializer(data=request.data)
+        if not check_password(request.data['current_password'], user.password):
+                return Response(
+                    {"detail": "Неверный пароль"}, status=status.HTTP_400_BAD_REQUEST
+                )
+#        if user.password != request.data["current_password"]:
+#            return Response(status=status.HTTP_400_BAD_REQUEST)
         if serializer.is_valid():
             user.set_password(serializer.validated_data["new_password"])
+            print(user.password)
+#            if user.password != current_password:
+#                return Response(
+#                    {"detail": "Неверный пароль"}, status=status.HTTP_400_BAD_REQUEST
+#                )
             user.save()
-            return Response({"status": "password set"})
+            return Response({"detail": "Пароль успешно изменен"}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
@@ -123,17 +144,15 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             'errors': 'Вы уже отписались'
         }, status=status.HTTP_400_BAD_REQUEST)
     
-
-
-
-#    @action(detail=False, permission_classes=[IsAuthenticated])
-#    def subscriptions(self, request):
-#        user = request.user
-#        queryset = Follow.objects.filter(user=user)
-#        pages = self.paginate_queryset(queryset)
-#        serializer = FollowSerializer(
-#            pages,
-#            many=True,
-#            context={'request': request}
-#        )
-#        return self.get_paginated_response(serializer.data)
+    @action(detail=False, permission_classes=[IsAuthenticated])
+    def subscriptions(self, request):
+        user = request.user
+        queryset = Follow.objects.filter(user=user)
+        pages = self.paginate_queryset(queryset)
+        serializer = FollowSerializer(
+            pages,
+            many=True,
+            context={'request': request}
+        )
+#        return Response(serializer.data)
+        return self.get_paginated_response(serializer.data)
