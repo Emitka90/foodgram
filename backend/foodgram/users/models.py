@@ -1,10 +1,10 @@
 from django.contrib.auth.models import AbstractUser
-from django.contrib.auth import get_user_model
 from django.db import models
+
 
 class User(AbstractUser):
     avatar = models.ImageField(
-        upload_to='users/avatars', 
+        upload_to='users/avatars',
         verbose_name='Аватар'
     )
 
@@ -15,7 +15,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-
 
 
 class Follow(models.Model):

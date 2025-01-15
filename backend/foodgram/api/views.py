@@ -1,7 +1,10 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser, AllowAny
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly
+)
 from django.shortcuts import get_object_or_404
 import pyshorteners
 from django.http import HttpResponse
@@ -9,16 +12,26 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from .pagination import LimitPageNumberPagination
 from .filters import RecipeFilter, IngredientSearch
-from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
-from .models import Tag, Recipe, Ingredient, Favorite, Shopping_cart, RecipeIngredients
-from .serializers import TagSerializer, IngredientSerializer, RecipeSerializer, ShortRecipeSerializer
-#, RecipeMainSerializer, RecipeCreateSerializer
+from .permissions import IsOwnerOrReadOnly
+from .models import (
+    Tag,
+    Recipe,
+    Ingredient,
+    Favorite,
+    Shopping_cart,
+    RecipeIngredients
+)
+from .serializers import (
+    TagSerializer,
+    IngredientSerializer,
+    RecipeSerializer,
+    ShortRecipeSerializer
+)
+
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-#    permission_classes = [IsAdminUser, AllowAny]
-#    permission_classes = (IsAdminOrReadOnly,)
     http_method_names = ['get', 'head', 'options']
     pagination_class = None
 
@@ -27,7 +40,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     http_method_names = ['get', 'head', 'options']
-#    permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientSearch
     pagination_class = None
@@ -38,21 +50,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
     serializer_class = RecipeSerializer
     permission_classes = (IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
-    filter_class = RecipeFilter
+    filterset_class = RecipeFilter
     pagination_class = LimitPageNumberPagination
-    # Временно отключим пагинацию на уровне вьюсета, 
-    # так будет удобнее настраивать фильтрацию
-    # Фильтровать будем по полям color и birth_year модели Cat
-#    filterset_fields = ('tags', 'author') 
-
-#class RecipieView(viewsets.ModelViewSet):
-#    queryset = Recipe.objects.all()
-#    serializer_class = RecipeSerializer
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
-    
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+
+    @action(
+        methods=["post"], detail=True, permission_classes=[IsAuthenticated]
+    )
     def favorite(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
@@ -64,10 +70,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Favorite.objects.create(user=user, recipe=recipe)
         serializer = ShortRecipeSerializer(
             recipe
-#            favorite, context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     @favorite.mapping.delete
     def del_favorite(self, request, pk=None):
         user = request.user
@@ -85,13 +90,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         shortener = pyshorteners.Shortener()
         short_url = shortener.tinyurl.short(
             request.build_absolute_uri()
-#            .replace('/api', '')
             .replace('/get-link', '')
         )
         return Response({'short-link': short_url})
-    
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(
+        detail=True, methods=['post'], permission_classes=[IsAuthenticated]
+    )
     def shopping_cart(self, request, pk=None):
         user = request.user
         recipe = get_object_or_404(Recipe, id=pk)
@@ -103,10 +108,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Shopping_cart.objects.create(user=user, recipe=recipe)
         serializer = ShortRecipeSerializer(
             recipe
-#            favorite, context={'request': request}
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
+
     @shopping_cart.mapping.delete
     def del_recipe_shoping_cart(self, request, pk=None):
         user = request.user
@@ -118,6 +122,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response({
             'errors': 'Рецепт уже удален'
         }, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(["GET"])
 def download_shopping_cart(request):
@@ -147,10 +152,7 @@ def download_shopping_cart(request):
         )
     filename = "shoping_cart.txt"
     response = HttpResponse(content, content_type="text/plain")
-    response['Content-Disposition'] = 'attachment; filename={0}'.format(filename)
+    response['Content-Disposition'] = (
+        'attachment; filename={0}'.format(filename)
+    )
     return response
-
-#    def get_serializer_class(self):
-#        if self.action == 'create':
-#            return RecipeCreateSerializer
-#        return RecipeMainSerializer

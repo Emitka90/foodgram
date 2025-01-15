@@ -36,7 +36,7 @@ class Ingredient(models.Model):
         'Единица измерения',
         max_length=64
     )
-    
+
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
@@ -73,10 +73,9 @@ class Recipe(models.Model):
         verbose_name='Ингредиенты'
     )
     image = models.ImageField(
-        upload_to='recipes/images/', 
+        upload_to='recipes/images/',
         verbose_name='Изображение'
     )
-
 
     class Meta:
         ordering = ['-id']

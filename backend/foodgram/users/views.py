@@ -6,7 +6,6 @@ from rest_framework.permissions import (
 
 from django.contrib.auth.hashers import make_password, check_password
 from django.shortcuts import get_object_or_404
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -26,14 +25,11 @@ User = get_user_model()
 class CustomUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     pagination_class = LimitPageNumberPagination
-#    serializer_class = CustomUserSerializer
-
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
             return UserReadSerializer
         return CustomUserSerializer
-
 
     def perform_create(self, serializer):
         if "password" in self.request.data:
@@ -49,7 +45,6 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         else:
             serializer.save()
 
-
     @action(
         methods=["get"], detail=False, permission_classes=[IsAuthenticated]
     )
@@ -57,44 +52,48 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         user = get_object_or_404(User, pk=request.user.id)
         serializer = UserReadSerializer(user)
         return Response(serializer.data)
-    
 
     @action(["post"], detail=False)
     def set_password(self, request, *args, **kwargs):
         user = self.request.user
-        current_password = user.password
-        print(current_password)
         serializer = PasswordSerializer(data=request.data)
         if not check_password(request.data['current_password'], user.password):
-                return Response(
-                    {"detail": "Неверный пароль"}, status=status.HTTP_400_BAD_REQUEST
-                )
-#        if user.password != request.data["current_password"]:
-#            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Неверный пароль"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         if serializer.is_valid():
             user.set_password(serializer.validated_data["new_password"])
-            print(user.password)
-#            if user.password != current_password:
-#                return Response(
-#                    {"detail": "Неверный пароль"}, status=status.HTTP_400_BAD_REQUEST
-#                )
             user.save()
-            return Response({"detail": "Пароль успешно изменен"}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"detail": "Пароль успешно изменен"},
+                status=status.HTTP_204_NO_CONTENT
+            )
         else:
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-    @action(methods=["put"], detail=False, permission_classes=[IsAuthenticated], url_path="me/avatar")
+    @action(
+        methods=["put"],
+        detail=False,
+        permission_classes=[IsAuthenticated],
+        url_path="me/avatar"
+    )
     def set_avatar(self, request):
         avatar_data = request.data.get('avatar')
         if not avatar_data:
-            return Response({'detail': 'Требуется аватар.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Требуется аватар.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         user = self.request.user
         serializer = AvatarSerializer(user, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'avatar': user.avatar.url}, status=status.HTTP_200_OK)
+            return Response(
+                {'avatar': user.avatar.url}, status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @set_avatar.mapping.delete
@@ -106,9 +105,14 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             user.save()
             return Response(status=status.HTTP_204_NO_CONTENT)
         else:
-            return Response({'detail': 'Аватар не найден.'}, status=status.HTTP_404_NOT_FOUND)
-    
-    @action(methods=["post"], detail=True, permission_classes=[IsAuthenticated])
+            return Response(
+                {'detail': 'Аватар не найден.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    @action(
+        methods=["post"], detail=True, permission_classes=[IsAuthenticated]
+    )
     def subscribe(self, request, pk=None):
         user = request.user
         author = get_object_or_404(User, id=pk)
@@ -143,7 +147,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         return Response({
             'errors': 'Вы уже отписались'
         }, status=status.HTTP_400_BAD_REQUEST)
-    
+
     @action(detail=False, permission_classes=[IsAuthenticated])
     def subscriptions(self, request):
         user = request.user
@@ -154,5 +158,4 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             many=True,
             context={'request': request}
         )
-#        return Response(serializer.data)
         return self.get_paginated_response(serializer.data)
