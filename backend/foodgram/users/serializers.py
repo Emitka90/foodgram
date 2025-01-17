@@ -1,12 +1,13 @@
-from django.contrib.auth import get_user_model
-from rest_framework.validators import UniqueValidator
-from rest_framework import serializers
-from django.core.validators import RegexValidator
 import base64
-from django.core.files.base import ContentFile
-from api.models import Recipe
-from .models import Follow
 
+from api.models import Recipe
+from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from django.core.validators import RegexValidator
+from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
+
+from .models import Follow
 
 User = get_user_model()
 

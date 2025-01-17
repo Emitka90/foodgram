@@ -1,23 +1,16 @@
+from api.pagination import LimitPageNumberPagination
 from django.contrib.auth import get_user_model
-from rest_framework import status, viewsets
-from rest_framework.permissions import (
-    IsAuthenticated,
-)
-
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.shortcuts import get_object_or_404
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.pagination import LimitPageNumberPagination
 from .models import Follow
-from .serializers import (
-    CustomUserSerializer,
-    PasswordSerializer,
-    AvatarSerializer,
-    FollowSerializer,
-    UserReadSerializer
-)
+from .serializers import (AvatarSerializer, CustomUserSerializer,
+                          FollowSerializer, PasswordSerializer,
+                          UserReadSerializer)
 
 User = get_user_model()
 

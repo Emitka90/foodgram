@@ -1,4 +1,4 @@
-version: '3.3'
+#version: '3.3'
 services:
   db:
     # Из какого образа запустить контейнер:
@@ -15,31 +15,33 @@ services:
     env_file: ../.env
     volumes:
       - static:/backend_static
-      - media:/backend_media
+      - media:/app/media/
     # Какие контейнеры нужно запустить до старта этого контейнера:
     depends_on:
       - db
+
   frontend:
     container_name: foodgram-front
     build: ../frontend
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static
-#      - ../frontend/:/app/result_build/
   nginx:
     container_name: foodgram-proxy
     image: nginx:1.25.4-alpine
     ports:
-      - "8000:80"
+      - 8000:80
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - ../frontend/build:/usr/share/nginx/html/
-      - ../docs/:/usr/share/nginx/html/api/docs/
-      - static:/staticfiles/
+      - static:/staticfiles
+#      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+#      - ../frontend/build:/usr/share/nginx/html/
+#      - ../docs/:/usr/share/nginx/html/api/docs/
 #      - static:/var/html/static/
-      - media:/var/html/media/
+#      - media:/var/html/media/
 
 volumes:
   foodgram_data:
   static:
   media:
+
+
